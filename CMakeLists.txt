@@ -16,6 +16,9 @@ find_package(glfw3 CONFIG REQUIRED)
 #glm provides CMake targets:
 find_package(glm CONFIG REQUIRED)
 
+#imgui provides CMake targets:
+find_package(imgui CONFIG REQUIRED)
+
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/src")
 file(GLOB files src/*.cpp)
@@ -26,4 +29,5 @@ foreach(file ${files})
     target_link_libraries(${name} PRIVATE glad::glad)
     target_link_libraries(${name} PRIVATE glfw)
     target_link_libraries(${name} PRIVATE glm::glm)
+    target_link_libraries(${name} PRIVATE imgui::imgui)
 endforeach()
