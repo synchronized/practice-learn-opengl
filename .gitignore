@@ -1,4 +1,6 @@
 .ccls-cache
+.vs
 build
 vcpkg_installed
 compile_commands.json
+CMakeSettings.json
