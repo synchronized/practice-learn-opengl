@@ -1,0 +1,4 @@
+.ccls-cache
+build
+vcpkg_installed
+compile_commands.json
