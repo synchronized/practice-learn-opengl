@@ -9,6 +9,6 @@
     "name": "glm"
   }, {
     "name": "imgui",
-    "features": [ "glfw-binding" ]
+    "features": [ "glfw-binding", "opengl3-binding" ]
   }]
 }
