@@ -5,6 +5,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <array>
 #include <cmath>
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -23,6 +24,7 @@ class Shader {
     void setInt(const std::string &name, int v1) const;
     void setFloat(const std::string &name, float v1) const;
     void setVec2(const std::string &name, float v1, float v2) const;
+    void close();
 };
 
 Shader::Shader(const char* vertexPath, const char* fragmentPath) {
@@ -103,7 +105,99 @@ void Shader::setVec2(const std::string &name, float v1, float v2) const {
     glUniform2f(glGetUniformLocation(ID, name.c_str()), v1, v2);
 }
 
+void Shader::close() {
+    glDeleteProgram(ID);
+}
 
+//-----------------------------------------------
+class Line {
+  public:
+    std::array<float, 6> vertices;
+    unsigned int VBO, VAO;
+
+    Line(float p1x, float p1y, float p2x, float p2y);
+
+    void Draw() const;
+    void close();
+};
+
+Line::Line(float p1x, float p1y, float p2x, float p2y) {
+    vertices = {p1x, p1y, 0.0f, p2x, p2y, 0.0f};
+
+    glGenBuffers(1, &VBO);
+    glGenVertexArrays(1, &VAO);
+
+    glBindVertexArray(VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size()*sizeof(float), vertices.cbegin(), GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+}
+
+void Line::Draw() const {
+    glBindVertexArray(VAO);
+    glDrawArrays(GL_LINES, 0, 2);
+}
+
+void Line::close() {
+    glDeleteBuffers(1, &VBO);
+    glDeleteVertexArrays(1, &VAO);
+}
+
+//-----------------------------------------------
+class Triangle {
+  public:
+    unsigned int EBO, VBO, VAO;
+    //std::array<float, 18> vertices;
+    //std::array<unsigned int, 3> indexes;
+
+    Triangle();
+
+    void close();
+    void Draw() const;
+};
+
+Triangle::Triangle() {
+    float vertices[] = {
+        -0.3f, -0.3f, 0.0f,   1.0f, 0.0f, 0.0f,
+        0.3f, -0.3f, 0.0f,    0.0f, 1.0f, 0.0f,
+        0.0f, 0.3f, 0.0f,     0.0f, 0.0f, 1.0f,
+    };
+
+    unsigned int indexes[] = {
+        0, 1, 2,
+    };
+
+    glGenBuffers(1, &EBO);
+    glGenBuffers(1, &VBO);
+    glGenVertexArrays(1, &VAO);
+
+    glBindVertexArray(VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)(3*sizeof(float)));
+    glEnableVertexAttribArray(1);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indexes), indexes, GL_STATIC_DRAW);
+}
+
+void Triangle::close() {
+    glDeleteBuffers(1, &EBO);
+    glDeleteBuffers(1, &VBO);
+    glDeleteVertexArrays(1, &VAO);
+}
+
+void Triangle::Draw() const {
+    glBindVertexArray(VAO);
+    glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)0);
+}
+
+//-----------------------------------------------
 int main() {
     if (!glfwInit()) {
         std::cout << "glfwInit Failed" << std::endl;
@@ -134,36 +228,13 @@ int main() {
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
     Shader shader("shader/shader-hello2.vertexshader", "shader/shader-hello2.fragmentshader");
+    Line line1(-0.5f, 0.5f, 0.5f, 0.5f);
+    Line line2(-0.5f, -0.5f, 0.5f, -0.5f);
+    Line line3(-0.5f, 0.5f, -0.5f, -0.5f);
+    Line line4(0.5f, 0.5f, 0.5f, -0.5f);
 
-    float vertices[] = {
-         0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,
-        -0.5f,  0.5f, 0.0f,   0.0f, 1.0f, 0.0f,
-        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,
-         0.5f, -0.5f, 0.0f,   0.5f, 0.5f, 0.5f,
-    };
+    Triangle triangle;
 
-    unsigned int indexes[] = {
-        0, 1, 2,
-        0, 2, 3,
-    };
-
-    unsigned int EBO, VBO, VAO;
-    glGenBuffers(1, &EBO);
-    glGenBuffers(1, &VBO);
-    glGenVertexArrays(1, &VAO);
-
-    glBindVertexArray(VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    //位置属性
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-    //颜色属性
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)(3*sizeof(float)));
-    glEnableVertexAttribArray(1);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indexes), indexes, GL_STATIC_DRAW);
 
     while(!glfwWindowShouldClose(window)) {
         // 清除颜色缓冲
@@ -177,20 +248,24 @@ int main() {
         shader.use();
         shader.setVec2("offset", xoffset, yoffset);
 
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-        //glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)0);
-        //glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)0);
-        glDrawElements(GL_LINES, 2, GL_UNSIGNED_INT, (void*)0);
-        glDrawElements(GL_LINES, 2, GL_UNSIGNED_INT, (void*)(1*sizeof(unsigned int)));
-        glDrawElements(GL_LINES, 2, GL_UNSIGNED_INT, (void*)(2*sizeof(unsigned int)));
+        line1.Draw();
+        line2.Draw();
+        line3.Draw();
+        line4.Draw();
+
+        triangle.Draw();
 
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
-    glDeleteBuffers(1, &EBO);
-    glDeleteBuffers(1, &VBO);
-    glDeleteVertexArrays(1, &VAO);
+    line1.close();
+    line2.close();
+    line3.close();
+    line4.close();
+
+    triangle.close();
+    shader.close();
 
     glfwTerminate();
     return 0;
