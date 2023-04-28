@@ -2,6 +2,8 @@
   "name": "learn-opengl",
   "version": "1.0.0",
   "dependencies": [{
+    "name": "stb"
+  },{
     "name": "glfw3"
   }, {
     "name": "glad"

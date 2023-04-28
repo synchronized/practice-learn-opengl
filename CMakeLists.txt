@@ -25,6 +25,8 @@ find_package(glm CONFIG REQUIRED)
 #imgui provides CMake targets:
 find_package(imgui CONFIG REQUIRED)
 
+#The package stb provides CMake targets:
+find_package(Stb REQUIRED)
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/src")
 file(GLOB files src/*.cpp)
@@ -36,4 +38,5 @@ foreach(file ${files})
     target_link_libraries(${name} PRIVATE glfw)
     target_link_libraries(${name} PRIVATE glm::glm)
     target_link_libraries(${name} PRIVATE imgui::imgui)
+    target_include_directories(${name} PRIVATE ${Stb_INCLUDE_DIR})
 endforeach()
