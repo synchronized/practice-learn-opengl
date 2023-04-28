@@ -12,8 +12,7 @@
 #include "stb_image.h"
 
 /**
-   纹理练习
-   混合2个纹理练习
+  翻转纹理方向
  */
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -199,7 +198,7 @@ int main() {
 
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
-    Shader shader("shader/texture-hello.vertexshader", "shader/texture-hello.fragmentshader");
+    Shader shader("shader/texture-hello1.vertexshader", "shader/texture-hello1.fragmentshader");
 
     float vertices[] = {
         // positions          // colors           // texture coords
