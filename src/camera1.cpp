@@ -20,6 +20,7 @@
  */
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+void processInput(GLFWwindow *window);
 
 class Shader {
   public:
@@ -188,6 +189,12 @@ void Texture::close() {
     glDeleteTextures(1, &m_textureId);
 }
 
+glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
+glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+
+float deltaTime = 0.0f; //当前帧与上一帧的时间差
+float lastFrameTime = 0.0f; //上一帧的时间
 
 //-----------------------------------------------
 int main() {
@@ -219,7 +226,7 @@ int main() {
 
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
-    Shader shader("shader/transformations2.vertexshader", "shader/transformations2.fragmentshader");
+    Shader shader("shader/camera.vertexshader", "shader/camera.fragmentshader");
 
     float vertices[] = {
         -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
@@ -319,21 +326,25 @@ int main() {
 
     };
 
+
     while(!glfwWindowShouldClose(window)) {
+        float currFrameTime = glfwGetTime();
+        deltaTime = currFrameTime - lastFrameTime;
+        lastFrameTime = currFrameTime;
+
+        processInput(window); // 判断按键按下，是否关闭窗口
         // 清除颜色缓冲
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        float timeValue = glfwGetTime();
+        float timeValue = currFrameTime;
         float minOffset = sin(timeValue)/2+0.5;
 
         texture1.use();
         texture2.use();
 
-
-        glm::mat4 view(1.0f);
-        //view = glm::translate(view, glm::vec3(0.0f, 0.0f, -5.0f));
-        view = glm::translate(view, glm::vec3(sin(timeValue)/2*3.0f, cos(timeValue)/2*3.0f, sin(timeValue)/2-5.0f));
+        glm::mat4 view;
+        view = glm::lookAt(cameraPos, cameraPos+cameraFront, cameraUp);
 
         glm::mat4 projection(1.0f);
         projection = glm::perspective(glm::radians(60.0f), screenWidth/screenHeight, 0.1f, 100.0f);
@@ -374,4 +385,23 @@ int main() {
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
+}
+
+void processInput(GLFWwindow *window) {
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+        glfwSetWindowShouldClose(window, true);
+    }
+    float cameraSpeed = 2.5f * deltaTime; //adjust accordingly
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+        cameraPos += cameraSpeed*cameraFront;
+    }
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+        cameraPos -= cameraSpeed*cameraFront;
+    }
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+        cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+    }
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+        cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+    }
 }
