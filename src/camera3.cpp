@@ -14,6 +14,7 @@
 
 #include "common/texture.h"
 #include "common/shader.h"
+#include "common/camera.h"
 
 /*
 *
@@ -25,116 +26,17 @@ void mouse_callback(GLFWwindow *window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow *window);
 
-const float speedBase = 2.5f;
+common::Camera camera = common::Camera(glm::vec3(0.0f, 0.0f, 3.0f));
 
-class Camera {
-  public:
-    glm::vec3 m_cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
-    glm::vec3 m_cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
-    glm::vec3 m_cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
-
-    float m_screenWidth = 4.0f;
-    float m_screenHeight = 3.0f;
-
-    glm::mat4 m_view = glm::mat4(1.0f);
-    glm::mat4 m_projection = glm::mat4(1.0f);
-
-    bool firstMouse;
-    float m_lastX, m_lastY;
-
-    float m_fov = 45.0f;
-    float m_yaw = -90.0f;
-    float m_pitch = 0.0f;
-
-  public:
-    Camera(float screenWidth, float screenHeight)
-        : m_screenWidth(screenWidth), m_screenHeight(screenHeight) {
-    }
-
-    void toForward(float delta);
-    void toBack(float delta);
-    void toLeft(float delta);
-    void toRight(float delta);
-
-    glm::mat4 &getView();
-    glm::mat4 &getProjection();
-
-    void frontMove(float xpos, float ypos);
-    void frontScroll(float xoffset, float yoffset);
-};
-
-void Camera::toForward(float delta) {
-  float cameraSpeed = speedBase * delta; //
-  m_cameraPos += cameraSpeed * m_cameraFront;
-}
-void Camera::toBack(float delta) {
-  float cameraSpeed = speedBase * delta; //
-  m_cameraPos -= cameraSpeed * m_cameraFront;
-}
-void Camera::toLeft(float delta) {
-  float cameraSpeed = speedBase * delta; //
-  m_cameraPos -=
-      glm::normalize(glm::cross(m_cameraFront, m_cameraUp)) * cameraSpeed;
-}
-void Camera::toRight(float delta) {
-  float cameraSpeed = speedBase * delta; //
-  m_cameraPos +=
-      glm::normalize(glm::cross(m_cameraFront, m_cameraUp)) * cameraSpeed;
-}
-
-glm::mat4& Camera::getView() {
-  m_view = glm::lookAt(m_cameraPos, m_cameraPos + m_cameraFront, m_cameraUp);
-  return m_view;
-}
-glm::mat4& Camera::getProjection() {
-  m_projection = glm::perspective(glm::radians(m_fov), m_screenWidth / m_screenHeight,
-                                0.1f, 100.0f);
-  return m_projection;
-}
-
-void Camera::frontMove(float xpos, float ypos) {
-  // 这个bool变量初始时是设定为true的
-  if (!firstMouse) {
-      m_lastX = xpos;
-      m_lastY = ypos;
-      firstMouse = true;
-  }
-  float xoffset = xpos - m_lastX;
-  // 注意这里是相反的，因为y坐标是从底部往顶部依次增大的
-  float yoffset = m_lastY - ypos;
-  m_lastX = xpos;
-  m_lastY = ypos;
-
-  float sensitivity = 0.05f;
-  xoffset *= sensitivity;
-  yoffset *= sensitivity;
-  m_yaw += xoffset;
-  m_pitch = m_pitch + yoffset;
-  if (m_pitch > 89.0f) {
-      m_pitch = 89.0f;
-  }
-  if (m_pitch < -89.0f) {
-      m_pitch = -89.0f;
-  }
-
-  glm::vec3 front;
-  front.x = cos(glm::radians(m_pitch)) * cos(glm::radians(m_yaw));
-  front.y = sin(glm::radians(m_pitch));
-  front.z = cos(glm::radians(m_pitch)) * sin(glm::radians(m_yaw));
-  m_cameraFront = glm::normalize(front);
-}
-
-void Camera::frontScroll(float xoffset, float yoffset) {
-    m_fov -= yoffset;
-    if (m_fov <= 1.0f) m_fov = 1.0f;
-    if (m_fov >= 60.0f) m_fov = 60.0f;
-    std::cout << "yoffset:" << yoffset << ", fov:" << m_fov << std::endl;
-}
-
-Camera camera = Camera(1080, 720);
+bool firstMouse = true;
+float lastX = 0.0f;
+float lastY = 0.0f;
 
 float deltaTime = 0.0f;     // 当前帧与上一帧的时间差
 float lastFrameTime = 0.0f; // 上一帧的时间
+
+float screenWidth = 1080;
+float screenHeight = 720;
 
 //-----------------------------------------------
 int main() {
@@ -149,7 +51,7 @@ int main() {
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // Required on Mac
 #endif
 
-    GLFWwindow* window = glfwCreateWindow(1080, 720, "hello shader example1", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(screenWidth, screenHeight, "hello shader example1", NULL, NULL);
     if (window == NULL) {
         std::cout << "Failed to glfwCreateWindow()" << std::endl;
         glfwTerminate();
@@ -283,8 +185,11 @@ int main() {
         texture1.use();
         texture2.use();
 
-        glm::mat4& view = camera.getView();
-        glm::mat4& projection = camera.getProjection();
+        glm::mat4 view = camera.GetViewMatrix();
+
+        glm::mat4 projection;
+        projection = glm::perspective(glm::radians(camera.m_Zoom), screenWidth / screenHeight,
+                                        0.1f, 100.0f);
 
         shader.use();
         shader.setMat4("view", view);
@@ -324,28 +229,33 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
 }
 
-void mouse_callback(GLFWwindow *window, double xpos, double ypos) {
-    camera.frontMove(static_cast<float>(xpos), static_cast<float>(ypos));
+void mouse_callback(GLFWwindow *window, double xposIn, double yposIn) {
+    float xpos = static_cast<float>(xposIn);
+    float ypos = static_cast<float>(yposIn);
+    if (firstMouse) {
+        lastX = xpos;
+        lastY = ypos;
+        firstMouse = false;
+    }
+    float xoffset = xpos - lastX;
+    float yoffset = lastY - ypos;
+
+    lastX = xpos;
+    lastY = ypos;
+    camera.ProcessMouseMovement(xoffset, yoffset);
 }
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
-    camera.frontScroll(static_cast<float>(xoffset), static_cast<float>(yoffset));
+    std::cout << "xoffset:" << xoffset << ", yoffset:" << yoffset << std::endl;
+    camera.ProcessMouseScroll(static_cast<float>(yoffset));
 }
 
 void processInput(GLFWwindow *window) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);
     }
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-        camera.toForward(deltaTime);
-    }
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-        camera.toBack(deltaTime);
-    }
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-        camera.toLeft(deltaTime);
-    }
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-        camera.toRight(deltaTime);
-    }
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) camera.ProcessKeyboard(common::FORWARD, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) camera.ProcessKeyboard(common::BACKWARD, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) camera.ProcessKeyboard(common::LEFT, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) camera.ProcessKeyboard(common::RIGHT, deltaTime);
 }
