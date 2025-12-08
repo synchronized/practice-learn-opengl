@@ -5,7 +5,6 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <glm/gtx/string_cast.hpp>
 
 #ifndef _CAMERA_H_
 #define _CAMERA_H_

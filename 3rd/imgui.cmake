@@ -9,6 +9,7 @@ set(srcs
     ${root}/imgui_widgets.cpp 
     ${root}/imgui_tables.cpp 
     ${root}/imgui_draw.cpp
+    ${root}/imgui_demo.cpp
     ${root}/backends/imgui_impl_glfw.cpp
     ${root}/backends/imgui_impl_opengl3.cpp)
 

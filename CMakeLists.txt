@@ -3,6 +3,8 @@ cmake_minimum_required(VERSION 3.23)
 
 project(practice-learn-opengl)
 
+set(CMAKE_CXX_STANDARD 17)
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # By default, MSVC uses the GBK encoding.
@@ -23,6 +25,7 @@ foreach(file ${files})
     target_link_libraries(${name} PRIVATE glad::glad)
     target_link_libraries(${name} PRIVATE glfw)
     target_link_libraries(${name} PRIVATE glm::glm)
+    target_link_libraries(${name} PRIVATE stb)
     target_link_libraries(${name} PRIVATE imgui::imgui)
     target_link_libraries(${name} PRIVATE common)
 endforeach()

@@ -21,6 +21,9 @@ endif()
 
 if(NOT TARGET glm)
     add_subdirectory(glm)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+        target_compile_options(glm PRIVATE -Wno-c++17-extensions)
+    endif()
     set_target_properties(glm PROPERTIES FOLDER ${third_party_folder}/glm)
 endif()
 
