@@ -11,24 +11,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
 add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
 
-message("CMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}")
-
-#glad provides CMake targets:
-find_package(glad CONFIG REQUIRED)
-
-#glfw3 provides CMake targets:
-find_package(glfw3 CONFIG REQUIRED)
-
-#glm provides CMake targets:
-find_package(glm CONFIG REQUIRED)
-
-#imgui provides CMake targets:
-find_package(imgui CONFIG REQUIRED)
-
-#The package stb provides CMake targets:
-find_package(Stb REQUIRED)
-
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}/src")
+add_subdirectory(3rd)
 add_subdirectory(src/common)
 
 file(GLOB files src/*.cpp)
@@ -36,7 +19,7 @@ foreach(file ${files})
     get_filename_component(name ${file} NAME_WLE)
     add_executable(${name})
     target_sources(${name} PRIVATE ${file})
-    target_include_directories(${name} PRIVATE ${Stb_INCLUDE_DIR})
+    target_include_directories(${name} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
     target_link_libraries(${name} PRIVATE glad::glad)
     target_link_libraries(${name} PRIVATE glfw)
     target_link_libraries(${name} PRIVATE glm::glm)
