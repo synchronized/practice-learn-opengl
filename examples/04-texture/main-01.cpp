@@ -11,111 +11,14 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+#include "common/shader.h"
+
 /**
    纹理练习
    混合2个纹理练习
  */
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-
-class Shader {
-  public:
-    //程序id
-    unsigned int ID;
-
-    //构造器
-    Shader(const char* vertexPath, const char* fragmentPath);
-    //使用/激活程序
-    void use();
-    //uniform工具函数
-    void setBool(const std::string &name, bool v1) const;
-    void setInt(const std::string &name, int v1) const;
-    void setFloat(const std::string &name, float v1) const;
-    void setVec2(const std::string &name, float v1, float v2) const;
-    void close();
-};
-
-Shader::Shader(const char* vertexPath, const char* fragmentPath) {
-    std::string vertexShaderSource, fragmentShaderSource;
-    std::ifstream vertexShaderFile, fragmentShaderFile;
-    vertexShaderFile.exceptions (std::ifstream::failbit | std::ifstream::badbit);
-    fragmentShaderFile.exceptions (std::ifstream::failbit | std::ifstream::badbit);
-    try {
-        vertexShaderFile.open(vertexPath);
-        fragmentShaderFile.open(fragmentPath);
-        std::stringstream vertexShaderStream, fragmentShaderStream;
-        vertexShaderStream << vertexShaderFile.rdbuf();
-        fragmentShaderStream << fragmentShaderFile.rdbuf();
-        vertexShaderFile.close();
-        fragmentShaderFile.close();
-        vertexShaderSource = vertexShaderStream.str();
-        fragmentShaderSource = fragmentShaderStream.str();
-    } catch(std::ifstream::failure e) {
-        std::cout << "ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ" << std::endl;
-        return;
-    }
-
-    const char* vShaderCode = vertexShaderSource.c_str();
-    const char* fShaderCode = fragmentShaderSource.c_str();
-
-    unsigned int vertexShader, fragmentShader;
-    int success;
-    char infoLog[512];
-
-    vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, &vShaderCode, NULL);
-    glCompileShader(vertexShader);
-    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-    if (!success) {
-        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::VERTEX::COMPILATION::FAILED" << std::endl << infoLog << std::endl;
-        return;
-    }
-
-    fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, &fShaderCode, NULL);
-    glCompileShader(fragmentShader);
-    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-    if (!success) {
-        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION::FAILED" << std::endl << infoLog << std::endl;
-        return;
-    }
-
-    ID = glCreateProgram();
-    glAttachShader(ID, vertexShader);
-    glAttachShader(ID, fragmentShader);
-    glLinkProgram(ID);
-    glGetProgramiv(ID, GL_LINK_STATUS, &success);
-    if (!success) {
-        glGetProgramInfoLog(ID, 512, NULL, infoLog);
-        std::cout << "ERROR::PROGRAM::COMPILATION::FAILED" << std::endl << infoLog << std::endl;
-        return;
-    }
-
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
-}
-
-void Shader::use() {
-    glUseProgram(ID);
-}
-void Shader::setBool(const std::string &name, bool v1) const {
-    glUniform1i(glGetUniformLocation(ID, name.c_str()), (int)v1);
-}
-void Shader::setInt(const std::string &name, int v1) const {
-    glUniform1i(glGetUniformLocation(ID, name.c_str()), v1);
-}
-void Shader::setFloat(const std::string &name, float v1) const {
-    glUniform1f(glGetUniformLocation(ID, name.c_str()), v1);
-}
-void Shader::setVec2(const std::string &name, float v1, float v2) const {
-    glUniform2f(glGetUniformLocation(ID, name.c_str()), v1, v2);
-}
-
-void Shader::close() {
-    glDeleteProgram(ID);
-}
 
 //-----------------------------------------------
 class Texture {
@@ -199,7 +102,7 @@ int main() {
 
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
-    Shader shader("shader/texture-hello.vertexshader", "shader/texture-hello.fragmentshader");
+    common::Shader shader("shader/texture-01.vert", "shader/texture-01.frag");
 
     float vertices[] = {
         // positions          // colors           // texture coords

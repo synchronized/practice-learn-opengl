@@ -6,51 +6,46 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 #include <iostream>
+#include <fstream>
 #include <sstream>
 #include <cmath>
-#include <algorithm>
 
-#include "common/texture.h"
 #include "common/shader.h"
-#include "common/camera.h"
+#include "common/texture.h"
 
-/*
-*
+/**
    变换-旋转
  */
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow *window, double xpos, double ypos);
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow *window);
 
-common::Camera camera = common::Camera(glm::vec3(0.0f, 0.0f, 3.0f));
+glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
+glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
-bool firstMouse = true;
-float lastX = 0.0f;
-float lastY = 0.0f;
-
-float deltaTime = 0.0f;     // 当前帧与上一帧的时间差
-float lastFrameTime = 0.0f; // 上一帧的时间
-
-float screenWidth = 1080;
-float screenHeight = 720;
+float deltaTime = 0.0f; //当前帧与上一帧的时间差
+float lastFrameTime = 0.0f; //上一帧的时间
 
 //-----------------------------------------------
 int main() {
-  if (!glfwInit()) {
-      std::cout << "glfwInit Failed" << std::endl;
-      return -1;
-  }
+    if (!glfwInit()) {
+        std::cout << "glfwInit Failed" << std::endl;
+        return -1;
+    }
 
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 #if defined(__APPLE__)
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // Required on Mac
 #endif
 
-    GLFWwindow* window = glfwCreateWindow(screenWidth, screenHeight, "hello shader example1", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(1080, 720, "hello shader example1", NULL, NULL);
     if (window == NULL) {
         std::cout << "Failed to glfwCreateWindow()" << std::endl;
         glfwTerminate();
@@ -67,9 +62,8 @@ int main() {
 
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetCursorPosCallback(window, mouse_callback);
-    glfwSetScrollCallback(window, scroll_callback);
 
-    common::Shader shader("shader/camera.vertexshader", "shader/camera.fragmentshader");
+    common::Shader shader("shader/camera-01.vert", "shader/camera-01.frag");
 
     float vertices[] = {
         -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
@@ -149,6 +143,10 @@ int main() {
     shader.setInt("ourTexture1", texture1.getIndex());
     shader.setInt("ourTexture2", texture2.getIndex());
 
+    float screenWidth = 4.0f;
+    float screenHeight = 3.0f;
+
+
     glEnable(GL_DEPTH_TEST);
     // 在调用这个函数之后，无论我们怎么去移动鼠标，光标都不会显示了，它也不会离开窗口。对于FPS摄像机系统来说非常完美。
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -169,7 +167,7 @@ int main() {
 
 
     while(!glfwWindowShouldClose(window)) {
-        float currFrameTime = static_cast<float>(glfwGetTime());
+        float currFrameTime = glfwGetTime();
         deltaTime = currFrameTime - lastFrameTime;
         lastFrameTime = currFrameTime;
 
@@ -184,11 +182,11 @@ int main() {
         texture1.use();
         texture2.use();
 
-        glm::mat4 view = camera.GetViewMatrix();
+        glm::mat4 view;
+        view = glm::lookAt(cameraPos, cameraPos+cameraFront, cameraUp);
 
-        glm::mat4 projection;
-        projection = glm::perspective(glm::radians(camera.m_Zoom), screenWidth / screenHeight,
-                                        0.1f, 100.0f);
+        glm::mat4 projection(1.0f);
+        projection = glm::perspective(glm::radians(60.0f), screenWidth/screenHeight, 0.1f, 100.0f);
 
         shader.use();
         shader.setMat4("view", view);
@@ -228,33 +226,25 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
 }
 
-void mouse_callback(GLFWwindow *window, double xposIn, double yposIn) {
-    float xpos = static_cast<float>(xposIn);
-    float ypos = static_cast<float>(yposIn);
-    if (firstMouse) {
-        lastX = xpos;
-        lastY = ypos;
-        firstMouse = false;
-    }
-    float xoffset = xpos - lastX;
-    float yoffset = lastY - ypos;
-
-    lastX = xpos;
-    lastY = ypos;
-    camera.ProcessMouseMovement(xoffset, yoffset);
-}
-
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
-    std::cout << "xoffset:" << xoffset << ", yoffset:" << yoffset << std::endl;
-    camera.ProcessMouseScroll(static_cast<float>(yoffset));
+void mouse_callback(GLFWwindow *window, double xpos, double ypos) {
+    float lastX = 400, lastY = 300;
 }
 
 void processInput(GLFWwindow *window) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);
     }
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) camera.ProcessKeyboard(common::FORWARD, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) camera.ProcessKeyboard(common::BACKWARD, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) camera.ProcessKeyboard(common::LEFT, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) camera.ProcessKeyboard(common::RIGHT, deltaTime);
+    float cameraSpeed = 2.5f * deltaTime; //adjust accordingly
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+        cameraPos += cameraSpeed*cameraFront;
+    }
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+        cameraPos -= cameraSpeed*cameraFront;
+    }
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+        cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+    }
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+        cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+    }
 }

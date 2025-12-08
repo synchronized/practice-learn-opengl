@@ -1,0 +1,193 @@
+#include <glad/glad.h>
+
+#include <GLFW/glfw3.h>
+
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/string_cast.hpp>
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <cmath>
+
+#include "common/shader.h"
+#include "common/texture.h"
+
+/**
+   变换-旋转
+ */
+
+void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+
+//-----------------------------------------------
+int main() {
+    if (!glfwInit()) {
+        std::cout << "glfwInit Failed" << std::endl;
+        return -1;
+    }
+
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+#if defined(__APPLE__)
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // Required on Mac
+#endif
+
+    GLFWwindow* window = glfwCreateWindow(1080, 720, "hello shader example1", NULL, NULL);
+    if (window == NULL) {
+        std::cout << "Failed to glfwCreateWindow()" << std::endl;
+        glfwTerminate();
+        return -1;
+    }
+
+    glfwMakeContextCurrent(window);
+
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+        std::cout << "Failed to gladLoadGLLoader()" << std::endl;
+        glfwTerminate();
+        return -1;
+    }
+
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+
+    common::Shader shader("shader/transform-01.vert", "shader/transform-01.frag");
+    common::Shader shader2("shader/transform-02.vert", "shader/transform-02.frag");
+
+    float vertices[] = {
+        // positions          // colors           // texture coords
+        0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f, // top right
+        0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f, // bottom right
+        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // bottom left
+        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f  // top left
+    };
+    unsigned int indices[] = {
+        0, 1, 3, // first triangle
+        1, 2, 3  // second triangle
+    };
+
+    unsigned int EBO, VBO, VAO;
+    glGenBuffers(1, &EBO);
+    glGenBuffers(1, &VBO);
+    glGenVertexArrays(1, &VAO);
+
+    glBindVertexArray(VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(3*sizeof(float)));
+    glEnableVertexAttribArray(1);
+
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(6*sizeof(float)));
+    glEnableVertexAttribArray(2);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+    common::Texture texture1(GL_TEXTURE0);
+    texture1.setWrapS(GL_CLAMP_TO_EDGE)
+            .setWrapT(GL_CLAMP_TO_EDGE);
+    if (texture1.open("assets/texture/container.jpg", GL_RGB) != 0) {
+        std::cout << "load texture image failed" << std::endl;
+        glfwTerminate();
+        return -1;
+    }
+    common::Texture texture2(GL_TEXTURE1);
+    texture2.setFormat(GL_RGBA);
+    if (texture2.open("assets/texture/awesomeface.png", GL_RGBA) != 0) {
+        std::cout << "load texture image failed" << std::endl;
+        glfwTerminate();
+        return -1;
+    }
+
+    shader.use();
+    shader.setInt("ourTexture1", texture1.getIndex());
+    shader.setInt("ourTexture2", texture2.getIndex());
+
+    shader2.use();
+    shader2.setInt("ourTexture1", texture1.getIndex());
+    shader2.setInt("ourTexture2", texture2.getIndex());
+
+
+    //glm::mat4 trans(1.0f);
+    //trans = glm::rotate(trans, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    //trans = glm::scale(trans, glm::vec3(0.5f, 0.5f, 0.5f));
+
+
+    while(!glfwWindowShouldClose(window)) {
+        // 清除颜色缓冲
+        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        float timeValue = glfwGetTime();
+        float minOffset = sin(timeValue)/2+0.5;
+
+        texture1.use();
+        texture2.use();
+
+        shader.use();
+        shader.setFloat("mixOffset", minOffset);
+
+        glm::mat4 trans(1.0f);
+        trans = glm::translate(trans, glm::vec3(0.5f, -0.5f, 0.0f));
+        trans = glm::rotate(trans, glm::radians(timeValue*10), glm::vec3(0.0f, 0.0f, 1.0f));
+        shader.setMat4f("transform", glm::value_ptr(trans));
+
+        glBindVertexArray(VAO);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)0);
+
+        //第二个物体
+        shader2.use();
+        shader2.setFloat("mixOffset", minOffset);
+
+        float scaleOffset = sin(timeValue)/4+0.75;
+        glm::mat4 trans2(1.0f);
+        trans2 = glm::translate(trans2, glm::vec3(-0.5f, 0.5f, 0.0f));
+        trans2 = glm::rotate(trans2, glm::radians(timeValue*10), glm::vec3(0.0f, 0.0f, 1.0f));
+        trans2 = glm::scale(trans2, glm::vec3(scaleOffset, scaleOffset, 0.0f));
+        shader2.setMat4f("transform", glm::value_ptr(trans2));
+
+        glBindVertexArray(VAO);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)0);
+
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+    }
+
+    glDeleteBuffers(1, &EBO);
+    glDeleteBuffers(1, &VBO);
+    glDeleteVertexArrays(1, &VAO);
+
+    shader.close();
+
+    glfwTerminate();
+    return 0;
+}
+
+void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
+    glViewport(0, 0, width, height);
+}
+
+//-----------------------------------------------
+int test1() {
+    glm::vec4 vec(1.0f, 0.0f, 0.0f, 1.0f);
+    // 译注：下面就是矩阵初始化的一个例子，如果使用的是0.9.9及以上版本
+    // 下面这行代码就需要改为:
+    // glm::mat4 trans = glm::mat4(1.0f)
+    // 之后将不再进行提示
+    glm::mat4 trans(1.0f);
+    std::cout << "trans :" << glm::to_string(trans) << std::endl;
+    std::cout << "vec   :" << glm::to_string(vec) << std::endl;
+    trans = glm::translate(trans, glm::vec3(1.0f, 1.0f, 0.0f));
+    std::cout << "trans :" << glm::to_string(trans) << std::endl;
+    vec = trans * vec;
+    std::cout << "x:" << vec.x << ", y:" << vec.y << ", z:" << vec.z << std::endl;
+    return 0;
+}

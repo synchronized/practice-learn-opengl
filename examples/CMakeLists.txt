@@ -1,0 +1,10 @@
+add_custom_target(examples)
+set_target_properties(examples PROPERTIES FOLDER "examples")
+
+add_subdirectory(common)
+add_subdirectory(01-hello-window)
+add_subdirectory(02-hello-trangle)
+add_subdirectory(03-shader)
+add_subdirectory(04-texture)
+add_subdirectory(05-transorm)
+add_subdirectory(06-camera)
