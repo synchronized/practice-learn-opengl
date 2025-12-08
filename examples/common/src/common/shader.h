@@ -24,6 +24,8 @@ public:
     void setInt(const std::string &name, int v1) const;
     void setFloat(const std::string &name, float v1) const;
     void setVec2(const std::string &name, float v1, float v2) const;
+    void setVec3(const std::string &name, float v1, float v2, float v3) const;
+    void setVec3(const std::string &name, glm::vec3 &vec) const;
     void setMat4(const std::string &name, glm::mat4 &mat) const;
     void setMat4f(const std::string &name, const float *value) const;
     void close();
