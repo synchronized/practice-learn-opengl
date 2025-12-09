@@ -30,7 +30,7 @@ class Texture {
                                        m_wrapType_s(GL_REPEAT),
                                        m_wrapType_t(GL_REPEAT),
                                        m_minFilter(GL_LINEAR_MIPMAP_LINEAR),
-                                       m_magFilter(GL_LINEAR) {}
+                                       m_magFilter(GL_NEAREST_MIPMAP_NEAREST) {}
 
     Texture& setFormat(unsigned int format) {m_format=format; return *this;}
     Texture& setWrapS(unsigned int wrapType) {m_wrapType_s = wrapType; return *this;}

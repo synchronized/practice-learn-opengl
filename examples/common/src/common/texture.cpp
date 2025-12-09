@@ -1,13 +1,14 @@
 
 #include <glad/glad.h>
-
 #include <GLFW/glfw3.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "stb_image.h"
+#include <stb_image.h>
+
+#include <iostream>
 
 #include "common/texture.h"
 
@@ -25,8 +26,9 @@ int Texture::open(const std::string &texPath, unsigned int format) {
 
     stbi_set_flip_vertically_on_load(true);
     int width, height, nrChannels;
-    unsigned char *data = stbi_load(texPath.c_str(), &width, &height, &nrChannels, 0);
+    unsigned char *data = stbi_load(texPath.c_str(), &width, &height, &nrChannels, 3);
     if (data == NULL) {
+        std::cout << "load texture image failed" << std::endl;
         return -1;
     }
     glTexImage2D(GL_TEXTURE_2D, 0, m_format, width, height, 0, m_format, GL_UNSIGNED_BYTE, data);
