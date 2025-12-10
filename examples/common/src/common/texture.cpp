@@ -35,6 +35,7 @@ int Texture::open(const std::string &texPath, unsigned int format) {
     glGenerateMipmap(GL_TEXTURE_2D);
 
     stbi_image_free(data);
+    m_path = texPath;
     return 0;
 }
 
