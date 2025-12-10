@@ -34,8 +34,8 @@ private:
 
     /*  私有成员函数   */
     void loadModel(std::string path);
-    void processNode(aiNode* node, const aiScene* scene);
-    Mesh processMesh(aiMesh* mesh, const aiScene* scene);
+    void processNode(aiNode* node, const aiScene* scene, const glm::mat4& parentTransform);
+    Mesh processMesh(aiMesh* mesh, const aiScene* scene, const glm::mat4& transform);
     std::vector<Texture> loadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string typeName);
 };
 

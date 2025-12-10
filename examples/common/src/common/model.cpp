@@ -5,12 +5,22 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
 #include <iostream>
 #include <filesystem>
 
 namespace fs = std::filesystem;
 
 namespace common {
+
+namespace {
+glm::mat4 convertToGlm(const aiMatrix4x4& from) {
+    // Assimp matrix is row-major; glm expects column-major. Transpose after make_mat4.
+    return glm::transpose(glm::make_mat4(&from.a1));
+}
+} // namespace
 
 void Model::Draw(Shader& shader) {
     for(std::size_t i = 0; i < this->meshes.size(); i++) {
@@ -29,24 +39,27 @@ void Model::loadModel(std::string path) {
     }
     this->directory = path.substr(0, path.find_last_of('/'));
 
-    this->processNode(scene->mRootNode, scene);
+    glm::mat4 identity = glm::mat4(1.0f);
+    this->processNode(scene->mRootNode, scene, identity);
 }
 
-void Model::processNode(aiNode* node, const aiScene* scene) {
+void Model::processNode(aiNode* node, const aiScene* scene, const glm::mat4& parentTransform) {
+    glm::mat4 nodeTransform = convertToGlm(node->mTransformation);
+    glm::mat4 currentTransform = parentTransform * nodeTransform;
     // 添加当前节点中的所有Mesh
     for(std::size_t i = 0; i < node->mNumMeshes; i++)
     {
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]]; 
-        this->meshes.push_back(this->processMesh(mesh, scene)); 
+        this->meshes.push_back(this->processMesh(mesh, scene, currentTransform)); 
     }
     // 递归处理该节点的子孙节点
     for(std::size_t i = 0; i < node->mNumChildren; i++)
     {
-        this->processNode(node->mChildren[i], scene);
+        this->processNode(node->mChildren[i], scene, currentTransform);
     }
 }
 
-Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
+Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene, const glm::mat4& transform) {
     std::vector<Vertex> vertices;
     std::vector<GLuint> indices;
     std::vector<Texture> textures;
@@ -55,8 +68,11 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
     {
         Vertex vertex;
         // 处理顶点坐标、法线和纹理坐标
-        vertex.Position = glm::vec3(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z);
-        vertex.Normal = glm::vec3(mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z);
+        glm::vec4 pos = transform * glm::vec4(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z, 1.0f);
+        vertex.Position = glm::vec3(pos);
+
+        glm::mat3 normalMatrix = glm::mat3(glm::transpose(glm::inverse(transform)));
+        vertex.Normal = glm::normalize(normalMatrix * glm::vec3(mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z));
         if (mesh->HasTextureCoords(0)) { // 纹理坐标存在
             vertex.TexCoords = glm::vec2(mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y);
         }
